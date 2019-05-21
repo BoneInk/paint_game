@@ -1,6 +1,5 @@
 # Paint Game #
 
-[Demo](http://paintgame.moyuyc.xyz/)
 
     npm install
 

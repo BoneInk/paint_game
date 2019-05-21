@@ -5,95 +5,214 @@
     <meta name="renderer" content="webkit">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <title>Paint Online</title>
-    <link href="style.css" rel="stylesheet" />
-    <script>
-        document.write('<script defer="defer" src="'+location.href+'socket.io/socket.io.js"><'+'/script>');
-    </script>
+    <link href="style.css" rel="stylesheet"/>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Barrage">
+    <meta name="keywords" content="">
+    <!-- 新 Bootstrap 核心 CSS 文件 -->
+    <link rel="stylesheet" href="//cdn.bootcss.com/bootstrap/3.3.7/css/bootstrap.min.css">
+    <link rel="stylesheet" href="barrager.css">
+    <!-- socket IO  -->
+    <script src="//cdn.bootcss.com/socket.io/2.0.3/socket.io.js"></script>
+    <!-- jQuery文件。务必在bootstrap.min.js 之前引入 -->
+    <script src="//cdn.bootcss.com/jquery/1.11.3/jquery.min.js"></script>
+    <!-- 最新的 Bootstrap 核心 JavaScript 文件 -->
+    <script src="//cdn.bootcss.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+    <script src="//cdn.bootcss.com/json2/20160511/json2.min.js"></script>
+    <script src="jquery.barrager.js"></script>
+    <script src="http://pv.sohu.com/cityjson?ie=utf-8"></script>
     <script defer="defer" src="js.js"></script>
     <script defer="defer" src="io.js"></script>
+    <script>
+        function f() {
+            var flag = document.getElementById('button1').value;
+            var audio = document.getElementById('music2');
+            if (flag == 0) {
+                if (audio != null) {
+                    audio.volume = 0.5;
+                    audio.play();
+                    document.getElementById("button1").innerHTML = "背景音乐：开";
+                    document.getElementById("button1").value = 1;
+                }
+            } else if (flag == 1) {
+                audio.pause();
+                document.getElementById("button1").innerHTML = "背景音乐：关";
+                document.getElementById("button1").value = 0;
+            }
+        }
+    </script>
+    <style type="text/css">
+        body, html {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-size: 100% auto;
+        }
+
+        #background {
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: -100;
+        }
+    </style>
 </head>
 <body>
-    <main class="container">
-        <h1>实时「你画我猜」</h1>
-        <div class="row">
-            <div style="float: left;width: 100%;">
-                <div style="margin-left:10px;margin-right: 400px;">
-                    <div class="box-sh">
-                    <canvas height="600">
-                        Sorry, Your Browser don't support canvas of Html5.
-                    </canvas>
-                    <div style="background-color: gainsboro">
-                        <div class="ctl-row" id="colors">
-                            <span class="text-blue fl" style="padding:0 4px 0;">颜色</span>
-                        </div>
-                        <div class="ctl-row">
-                            <span class="text-blue fl" style="padding:0 4px 0;">线宽</span>
-                            <input id="ranger" type="range" style="width: 100px;" value="1" min="1" step="1" max="10"/>
-                            <span>1</span>
-                            <div class="fr" id="btns">
-                                <a class="btn btn-blue btn-active-able" href="javascript:delete canvas.erase;">画笔</a>
-                                <a class="btn btn-blue btn-active-able" href="javascript:canvas.erase=true;">橡皮擦</a>
-                                <a class="btn btn-blue" onclick="socket.emit('clear paths');" href="javascript:;">清空</a>
-                                <a class="btn btn-blue" onclick="this.href=canvas.toDataURL();" download="png.png">下载</a>
-                            </div>
-                            <div style="clear: both;"></div>
-                        </div>
-                    </div>
-                    </div>
-                    <main style="margin-top: 20px;">
-                        <div class="row">
-                            <div class="col-2">
-                                <div class="box-sh">
-                                <h4>上场玩家</h4>
-                                <div id="div-users" style="min-height:50px;max-height: 120px;overflow-y: scroll;">
+<canvas id="background"></canvas>
+<script type="text/javascript" src="background.js"></script>
+<audio src="write_short.mp3" controls="controls" preload id="music1" hidden>
+</audio>
+<audio autoplay="autoplay" id="music2" src="happy.mp3" controls="controls" hidden>
+</audio>
 
+<div class="barrage-body">
+    <p id="online_count" class="online_count"></p>
+</div>
+
+<main class="container1">
+    <h1 style="color: white">你画我猜</h1>
+    <div style="float: right;color: white">点击切换壁纸：
+        <a href="JavaScript:bg1()">
+            <div class="fangkuai-blue"></div>
+        </a>
+        <a href="JavaScript:bg2()">
+            <div class="fangkuai-gray"></div>
+        </a>
+        <a href="JavaScript:bg3()">
+            <div class="fangkuai-darkblue"></div>
+        </a>
+        <a href="JavaScript:bg4()">
+            <div class="fangkuai-white"></div>
+        </a>
+    </div>
+    <div style="float: right">
+        <button id="button1" class="btn1" value="0" onclick="f()">
+            背景音乐：关
+        </button>
+    </div>
+    <div class="row">
+        <div style="float: left;width: 100%;">
+            <div style="margin-left:100px;margin-right: 500px;">
+                <main style="margin-top: 20px;">
+                    <div class="row">
+                        <div class="col-4">
+                            <div class="box-sh ">
+                                <h4>上场玩家</h4>
+                                <div id="div-users" style="height: 53px;overflow-y: scroll;">
                                 </div>
                                 <p class="fr" style="margin: 5px;">
-                                    <button class="btn btn-blue" id="btn-in" title="上场后，队列第一位将会上场绘画">上场！</button>
-                                    <button class="btn btn-blue" id="btn-autoin" title="自动上场">自动上场</button>
+                                    <button class="btn btn-blue" id="btn-in" title="上场后，队列第一位将会上场绘画">上场</button>
+                                    <button class="btn btn-blue" id="btn-autoin" title="自动上场">排队</button>
                                 </p>
                                 <p style="clear: both"></p>
-                                </div>
                             </div>
-                            <div class="col-4">
-                                <div class="box-sh">
+                        </div>
+                        <div class="col-4" style="margin-left: 2%">
+                            <div class="box-sh">
                                 <h4>信息栏</h4>
                                 <div id="info" style="padding: 10px;overflow: scroll">
-                                    <p style="white-space: nowrap;"><label>绘图玩家：</label><strong id="player"></strong></p>
+                                    <p style="white-space: nowrap;"><label>绘图玩家：</label><strong id="player"></strong>
+                                    </p>
                                     <p style="white-space: nowrap;"><label>剩余时间：</label><strong id="time"></strong></p>
                                     <p style="white-space: nowrap;"><label>关键词语：</label><strong id="word"></strong></p>
                                 </div>
-                                </div>
-                            </div>
-                            <div class="col-4">
-                                <div class="box-sh">
-                                <h4>排行榜</h4>
-                                <div class="table-responsive">
-                                    <table id="tops">
-                                        <tr role="template">
-                                            <td><label></label></td>
-                                            <td><strong></strong></td>
-                                            <td><em></em></td>
-                                        </tr>
-                                        <!--<li style="white-space: nowrap;" role="template"><label style="margin-right: 40px;"></label><strong style="margin-right: 20px;"></strong><em style="margin-right: 20px;padding-right: 10px;"></em></li>-->
-                                    </table>
-                                </div>
-                                </div>
                             </div>
                         </div>
-                    </main>
+                    </div>
+                </main>
+                <div class="box-sh" style="margin-top: 10px;height: 500px;">
+                    <canvas height="500" width="900px"
+                            style="position: absolute;top:300px;left: 120px;padding: 0px;z-index: 1;">
+                        Sorry, Your Browser don't support canvas of Html5.
+                    </canvas>
+                    <div style="position: absolute;top:300px;left: 120px;padding: 0px;z-index: -1;">
+                        <canvas id="myCanvas2" width="900px" height="500" style="margin:0px">
+                        </canvas>
+                    </div>
                 </div>
-
+                <div style="background-color: #ffffff;margin-top: 10px;border-radius: 3px;opacity: 0.95">
+                    <span>
+                    <table style="float: left;width: 50%">
+                        <tr>
+                            <td><span class="fl" style="padding:0 4px 0;color: black">线宽</span>
+                                <input id="ranger" type="range" style="width: 100px;float: left" value="1" min="1"
+                                       step="1"
+                                       max="10"/><span style="float: left;margin-left: 10px">1</span></td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <div class="ctl-row" id="colors">
+                                    <div class="fl" style="padding:0 4px 0;color: black">颜色</div>
+                                </div>
+                            </td>
+                        </tr>
+                    </table>
+                    </span>
+                    <span class="fr" id="btns" style="float: right;margin-top: -10px;margin-bottom: 5px">
+                        <table>
+                            <tr>
+                                <td>辅助画图：</td>
+                                <td><a class="btn btn-blue btn-active-able"
+                                       href="javascript:delete canvas.erase;setAssistantTools(1);">线</a></td>
+                                <td><a class="btn btn-blue btn-active-able"
+                                       href="javascript:delete canvas.erase;setAssistantTools(2);">椭圆</a></td>
+                                <td><a class="btn btn-blue btn-active-able"
+                                       href="javascript:delete canvas.erase;setAssistantTools(3);">空白实心框</a></td>
+                            </tr>
+                            <tr>
+                                <td><a class="btn btn-blue btn-active-able"
+                                       href="javascript:delete canvas.erase;setTure();clearAll()">开始绘画</a></td>
+                                <td><a class="btn btn-blue btn-active-able"
+                                       href="javascript:canvas.erase=true;setTure();clearAll()">橡皮擦</a></td>
+                                <td><a class="btn btn-blue" onclick="socket.emit('clear paths');"
+                                       href="javascript:setTure();clearAll();">清空画布</a></td>
+                                <td><a class="btn btn-blue" onclick="this.href=canvas.toDataURL();"
+                                       download="png.png">存储图像</a></td>
+                            </tr>
+                        </table>
+                    </span>
+                    <div style="clear: both;"></div>
+                </div>
             </div>
-            <div class="box-sh" style="margin-left: -380px;float: left;width:370px;">
+        </div>
+        <div style="margin-left: -430px;float: left;width:330px;margin-top: 20px">
+            <div class="box-sh">
+                <h4>排行榜</h4>
+                <div class="table-responsive">
+                    <table id="tops">
+                        <tr role="template">
+                            <td><label></label></td>
+                            <td><strong></strong></td>
+                            <td><em></em></td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+            <div class="box-sh" style="margin-top: 10px;height: 500px">
                 <h3>消息框</h3>
-                <div id="msg">
+                <div id="msg" style="height: 410px">
                 </div>
                 <input type="text" id="input-msg" placeholder="输入消息或者词语，回车键发送"/>
             </div>
         </div>
-    </main>
+    </div>
+</main>
 
+
+<script>
+    var cname = returnCitySN["cname"];
+    var p = document.getElementById("msg");
+    p.innerText = "欢迎您，来自" + cname + "的朋友！";
+</script>
 
 </body>
 </html>

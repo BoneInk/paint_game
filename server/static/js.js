@@ -1,11 +1,10 @@
-/**
- * Created by Yc on 2016/5/17.
- */
 
-var canvas = document.getElementsByTagName('canvas')[0],
+
+var canvas = document.getElementsByTagName('canvas')[1],
     ctx = canvas.getContext('2d'),
     msg = document.getElementById('msg'),
     ranger = document.getElementById('ranger'),
+    alter_canvas=true,
     colors = document.getElementById('colors');
 
 var input = document.getElementById('input-msg'),
@@ -14,15 +13,17 @@ var input = document.getElementById('input-msg'),
     btnAutoin = document.getElementById('btn-autoin'),
     info = document.getElementById('info'),
     tops = document.getElementById('tops');
+
 btnIn.inAct = function () {
     this.innerText='下场';
     this.in=true;
 };
 btnIn.outAct = function () {
-    this.innerText='上场！';
+    this.innerText='上场';
     this.in=false;
     this.disabled = false;
 };
+var isBusy = 0;
 tops.template = tops.querySelector('[role=template]').cloneNode(true);
 
 info.time = info.querySelector('#time')
@@ -67,6 +68,7 @@ window.onload = function () {
                 return;
             }
             socket.emit('client msg',this.value);
+            socket.emit("barrage", this.value);
             this.value = '';
         }
     }
@@ -81,47 +83,7 @@ window.onload = function () {
     },true);
 }
 
-canvas.addEventListener('mousemove',function (e) {
-    var w=20,h=20;
-    if(canvas.isMe){
-        var x = e.offsetX, y = e.offsetY;
-        if(e.buttons === 1) {
-            if(!this.erase){
-                Ctl.addPos(x,y);
-                Ctl.drawPts(ctx, this.pts);
-                socket.emit('paint',JSON.stringify({data:new Path(this.pts),status:'ing'}))
-            }else{
-                var rect = new Rect(x-(w>>>1),y-(h>>>1),w,h);
-                rect.clearOn(ctx);
-                socket.emit('erase',rect.x,rect.y,rect.w,rect.h);
-            }
-        }
-    }
-});
 
-canvas.addEventListener('mouseup',function (e) {
-    if(!canvas.isMe || this.erase) return;
-    var x = e.offsetX,y = e.offsetY;
-    Ctl.addPos(x,y);
-    Ctl.addPath(this.pts);
-    socket.emit('paint',JSON.stringify({data:new Path(this.pts),status:'end'}));
-    Ctl.clearPos();
-
-})
-
-canvas.addEventListener('mousedown',function (e) {
-    if(!this.isMe) return;
-    if(this.erase){
-        var w=20,h=20;
-        var rect = new Rect(x-(w>>>1),y-(h>>>1),w,h);
-        rect.clearOn(ctx);
-        socket.emit('erase',rect.x,rect.y,rect.w,rect.h);
-        return;
-    }
-    var x = e.offsetX,y = e.offsetY;
-    Ctl.clearPos();
-    Ctl.addPos(x,y);
-});
 colors.addEventListener('click',function (e) {
     var t = e.target;
     if(t.classList.contains('rect')){
@@ -136,7 +98,6 @@ ranger.addEventListener('change',function (e) {
     Ctl.setLw(this.value);
 });
 
-// Controller
 Ctl = {
     drawPts: function (ctx,pts) {
         if(pts instanceof Path || pts.pts){
@@ -154,6 +115,14 @@ Ctl = {
         ctx.strokeStyle = color || canvas.color;
         ctx.stroke();
         ctx.restore();
+    },
+    drawTool:function(tool_num,sX,sY,eX,eY)
+    {
+        startX=sX;
+        startY=sY;
+        endX=eX;
+        endY=eY;
+        print(ctx,tool_num)
     },
     init : function () {
         canvas.paths=[];
@@ -191,28 +160,23 @@ Ctl = {
     }
 };
 
-// webSocket
-/*
-var ws = WS({
-    path:'ws',
-    onOpen:function (e) {
-        alert('OK');
-    },
-    onError:function (e) {
-        // alert(e.message)
-        alert('Error');
-    },
-    onReceive:function (data,t) {
+function bf() {
+    var audio = document.getElementById('music1');
+    audio.volume = 0.5;
+    if (audio !== null) {
+        timedMsg();
+        audio.currentTime = 0.0;
+        audio.play();
 
-    },
-    onClose:function (e) {
-        alert('Close');
     }
-});*/
+}
+function timedMsg() {
+    setTimeout(set,500);
+}
+function set() {
+    isBusy = 1;
+}
 
-
-
-// model
 
 function Pos(x,y) {
     this.x=x;this.y=y;
@@ -231,4 +195,191 @@ function Rect(x,y,w,h) {
 
 Rect.prototype.clearOn = function (ctx) {
     ctx.clearRect(this.x,this.y,this.w,this.h);
+}
+
+
+function bg1() {
+    document.getElementById("background").style.display="inline";
+}
+
+function bg2() {
+    document.getElementById("background").style.display="none";
+    document.body.style.backgroundImage="url(bg1.jpg)";
+}
+
+function bg3() {
+    document.getElementById("background").style.display="none";
+    document.body.style.backgroundImage="url(bg2.png)";
+}
+
+function bg4(){
+    document.getElementById("background").style.display="none";
+    document.body.style.backgroundImage="url(bg3.jpg)";
+}
+var startP=true;
+var startX;
+var startY;
+var endX;
+var endY;
+var assistant_tools;
+var c2=document.getElementById("myCanvas2");
+var ctx2=c2.getContext("2d");
+var map_width=1265;
+var map_height=500;
+function setAssistantTools(num)
+{
+    assistant_tools=num;
+    alter_canvas=false;
+}
+function setTure() {
+    alter_canvas=true;
+}
+function print(ctx3,tool) {
+    ctx3.beginPath();
+    var weight;
+    var height;
+    switch (tool)
+    {
+        case 1:
+            ctx3.moveTo(startX,startY);
+            ctx3.lineTo(endX,endY);
+            break;
+        case 2:
+            ctx3.ellipse(Math.abs(startX+endX)/2,Math.abs(startY+endY)/2,Math.abs(startX-endX)/2,Math.abs(startY-endY)/2,0,0,Math.PI*2);
+            break;
+        case 3:
+            weight=Math.abs(endX-startX);
+            height=Math.abs(endY-startY);
+            if(startX<endX)
+            {
+                endX=startX;
+            }
+            if(startY<endY)
+            {
+                endY=startY;
+            }
+            ctx3.beginPath();
+            ctx3.fillRect(endX,endY,weight,height);
+            ctx3.clearRect(endX+2,endY+2,weight-4,height-4);
+            break;
+    }
+    ctx3.stroke();
+}
+
+canvas.addEventListener('mousemove',function (e) {
+    var w=20,h=20;
+    if(canvas.isMe){
+        if(alter_canvas)
+        {
+            var x = e.offsetX, y = e.offsetY;
+            if(e.buttons === 1) {
+                if(!this.erase){
+                    Ctl.addPos(x,y);
+                    Ctl.drawPts(ctx, this.pts);
+                    if (isBusy == 1){
+                        bf();
+                        isBusy = 0;
+                    }
+                    socket.emit('paint',JSON.stringify({data:new Path(this.pts),status:'ing'}))
+                }else{
+                    var rect = new Rect(x-(w>>>1),y-(h>>>1),w,h);
+                    rect.clearOn(ctx);
+                    socket.emit('erase',rect.x,rect.y,rect.w,rect.h);
+                }
+            }
+        }
+        else
+        {
+            var w=20,h=20;
+            var x = e.offsetX, y = e.offsetY;
+            endX=x;
+            endY=y;
+            var width;
+            var height;
+            if(startP) {
+                ctx2.clearRect(0,0,map_width,map_height);
+                width=Math.abs(x-startX);
+                height=Math.abs(y-startY);
+                if(startX<x)
+                {
+                    x=startX;
+                }
+                if(startY<y)
+                {
+                    y=startY;
+                }
+                ctx2.fillRect(x,y,width,height);
+                print(ctx2,assistant_tools);
+                for(var i=0;i<map_width;i+=2)
+                {
+                    ctx2.clearRect(i,0,1,map_height);
+                }
+                for(var i=0;i<map_height;i+=2)
+                {
+                    ctx2.clearRect(0,i,map_width,1);
+                }
+                ctx2.stroke();
+            }
+        }
+    }
+});
+
+canvas.addEventListener('mouseup',function (e) {
+    if(!canvas.isMe ) return;
+    if(alter_canvas)
+    {
+        var x = e.offsetX,y = e.offsetY;
+        Ctl.addPos(x,y);
+        Ctl.addPath(this.pts);
+        audio.pause();
+        isBusy = 0;
+        socket.emit('paint',JSON.stringify({data:new Path(this.pts),status:'end'}));
+        Ctl.clearPos();
+    }
+    else
+    {
+
+        var x = e.offsetX, y = e.offsetY;
+        endX = x;
+        endY = y;
+        startP = false;
+        ctx2.clearRect(0, 0, map_width,map_height);
+        ctx2.stroke();
+        print(ctx,assistant_tools);
+        ctx.stroke();
+        socket.emit('paint tool',assistant_tools,startX,startY,endX,endY);
+        alter_canvas=true;
+    }
+})
+
+canvas.addEventListener('mousedown',function (e) {
+    if(!this.isMe) return;
+    if(alter_canvas)
+    {
+        if(this.erase){
+            var w=20,h=20;
+            var rect = new Rect(x-(w>>>1),y-(h>>>1),w,h);
+            rect.clearOn(ctx);
+            socket.emit('erase',rect.x,rect.y,rect.w,rect.h);
+            return;
+        }
+        var x = e.offsetX,y = e.offsetY;
+        isBusy = 1;
+        Ctl.clearPos();
+        Ctl.addPos(x,y);
+    }
+    else
+    {
+        var x = e.offsetX, y = e.offsetY;
+        startP = true;
+        startX = x;
+        startY = y;
+
+    }
+});
+
+function clearAll() {
+    ctx2.beginPath();
+    ctx2.clearRect(0, 0, map_width,map_height);
+    ctx2.stroke();
 }
